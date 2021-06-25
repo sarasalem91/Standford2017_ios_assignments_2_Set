@@ -8,7 +8,7 @@
 import Foundation
 
 // color, number, shape, and shading // ▲●■
-
+// data structure
 struct SetCard:CustomStringConvertible , Hashable{
     var description: String{
         return "\(shape) \(number) \(color) \(shading)"
@@ -23,7 +23,7 @@ struct SetCard:CustomStringConvertible , Hashable{
     
     var isSelected:Bool = false
     var isMakeSet:Bool = false
-    
+    var isFaceUp:Bool = false
     
     enum Shape:String,CustomStringConvertible{
         var description: String{
