@@ -23,7 +23,7 @@ struct SetCard:CustomStringConvertible , Hashable{
     
     var isSelected:Bool = false
     var isMakeSet:Bool = false
-    var isFaceUp:Bool = false
+    
     
     enum Shape:String,CustomStringConvertible{
         var description: String{
