@@ -9,7 +9,8 @@ import Foundation
 
 // color, number, shape, and shading // ▲●■
 // data structure
-struct SetCard:CustomStringConvertible , Hashable{
+struct SetCard:CustomStringConvertible {
+    
     var description: String{
         return "\(shape) \(number) \(color) \(shading)"
     }
@@ -67,4 +68,15 @@ struct SetCard:CustomStringConvertible , Hashable{
         
         static var all = [Number.one,.two,.three]
     }
+}
+
+extension SetCard : Equatable {
+    
+    static func ==(lhs:SetCard,rhs:SetCard) -> Bool{
+        return lhs.color == rhs.color &&
+        lhs.shape == rhs.shape &&
+        lhs.shading == rhs.shading &&
+        lhs.number == rhs.number
+    }
+    
 }
