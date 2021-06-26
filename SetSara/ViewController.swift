@@ -9,7 +9,10 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    @IBOutlet weak var new_game_btn: UIButton!
+    var deck = SetCardDeck()
+    private var selectedButton = [UIButton]()
+    private var hintedButton = [UIButton]()
+    
     var new_game_btn_clck = false{
         didSet{
             if (deck.cards.count == 0){
@@ -24,102 +27,90 @@ class ViewController: UIViewController {
             }
         }
     }
-    @IBOutlet weak var score_lbl: UILabel!{
-        didSet{
-            score_lbl.text = "Score is : \(score )"
-        }
-    }
     var score = 0{
         didSet{
             score_lbl.text = "Score is : \(score )"
         }
     }
+    @IBOutlet weak var score_lbl: UILabel!{
+        didSet{
+            score_lbl.text = "Score is : \(score )"
+        }
+    }
+   
     @IBOutlet var buttonsArr: [UIButton]!
-    
-    var deck = SetCardDeck()
-
     @IBOutlet weak var deal_btn: UIButton!
+    @IBOutlet weak var new_game_btn: UIButton!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        show_n_cards()
+        updateViewFromModel()
         
-    }
-   
-    @IBAction func New_Game(_ sender: UIButton) {
-        score = 0
-        new_game_btn_clck = true
-        for index in buttonsArr.indices{
-            buttonsArr[index].isHidden = true
-            buttonsArr[index].alpha = 1
-            buttonsArr[index].layer.borderWidth = 0
-            buttonsArr[index].layer.borderColor = UIColor.clear.cgColor
-        }
-        deck.new_game()
-        show_n_cards()
     }
     
-    func show_n_cards(){
-        if buttonsArr.count > 0{
-            for index in deck.playing_cards.indices{
-                
-                var button = buttonsArr[index]
-                var card = deck.playing_cards[index]
-                
-                button.isHidden = false
-                draw_button(btn: button, card: card)
+    
+    @IBAction func press_hint(_ sender: UIButton) {
+        deck.hint()
+        if deck.hintCard.count > 0 {
+            for hint in 0...2 {
+                let index = deck.hintCard[hint]
+                buttonsArr[index].layer.borderColor = #colorLiteral(red: 0.4745098054, green: 0.8392156959, blue: 0.9764705896, alpha: 1)
+                buttonsArr[index].layer.borderWidth = 3.0
+                hintedButton.append(buttonsArr[index])
             }
+            hintedButton.removeAll()
         }
     }
-    func draw_button(btn:UIButton,card:SetCard){
-        var number = card.number
-        var color = card.color
-        var shade = card.shading
-        var shape = card.shape
-        
-        var shape_on_btn = shape.rawValue
-        print(number,color,shape,shade)
-        
-        if number.rawValue == 1{
-            shape_on_btn = "\(shape_on_btn)"
-        }else  if number.rawValue == 2{
-            shape_on_btn = "\(shape_on_btn) \(shape_on_btn)"
-        }else  if number.rawValue == 3{
-            shape_on_btn = "\(shape_on_btn) \(shape_on_btn) \(shape_on_btn)"
+    
+    @IBAction func New_Game(_ sender: UIButton) {
+        score = 0
+        deal_btn.isEnabled = true
+        new_game_btn_clck = true
+        deck = SetCardDeck()
+        resetButton()
+
+        selectedButton.removeAll()
+        hintedButton.removeAll()
+        updateViewFromModel()
+    }
+    private func resetButton() {
+        for button in buttonsArr {
+            let nsAttributedString = NSAttributedString(string: "")
+            button.setAttributedTitle(nsAttributedString, for: .normal)
+            button.layer.borderColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         }
-        var str : NSAttributedString?
-        var color_btn : UIColor?
-        switch color {
-        case .red:
-            color_btn = UIColor.red
-        case .blue:
-            color_btn = UIColor.blue
-        case .green:
-            color_btn = UIColor.green
+    }
+    func updateViewFromModel(){
+        for index in deck.playing_cards.indices{
+            buttonsArr[index].titleLabel?.numberOfLines = 0
+            buttonsArr[index].setAttributedTitle(setCardTitle(with: deck.playing_cards[index]), for: .normal)
+            
+        }
+    }
+    func setCardTitle(with card : SetCard)->NSAttributedString{
+        let attributes: [NSAttributedString.Key: Any] = [
+            .strokeColor: ModelToViewDataSource.colors[card.color]!,
+            .strokeWidth: ModelToViewDataSource.strokeWidth[card.shading],
+            .foregroundColor: ModelToViewDataSource.colors[card.color]!.withAlphaComponent(ModelToViewDataSource.alpha[card.shading]!),
+            ]
+        var cardTitle = ModelToViewDataSource.shapes[card.shape]!
+        switch card.number {
+        case .two: cardTitle = "\(cardTitle) \(cardTitle)"
+        case .three: cardTitle = "\(cardTitle) \(cardTitle) \(cardTitle)"
         default:
-            color_btn = UIColor.clear
+            break
         }
         
-        switch shade {
-        case .filled:
-            var attributes : [NSAttributedString.Key:Any] = [.strokeWidth:-5,.foregroundColor:color_btn?.withAlphaComponent(1)]
-             str = NSAttributedString(string: shape_on_btn, attributes: attributes)
-        case .striped:
-            var attributes : [NSAttributedString.Key:Any] = [.foregroundColor:color_btn?.withAlphaComponent(0.15)]
-             str = NSAttributedString(string: shape_on_btn, attributes: attributes)
-        case .outline:
-            var attributes : [NSAttributedString.Key:Any] = [.strokeWidth:5,.strokeColor:color_btn]
-             str = NSAttributedString(string: shape_on_btn, attributes: attributes)
-        }
-        
-        btn.setAttributedTitle(str, for: .normal)
-        btn.layer.cornerRadius = 8
+        return NSAttributedString(string: cardTitle, attributes: attributes)
     }
+
     
     @IBAction func chooseCard(_ sender: UIButton) {
         if let index = buttonsArr.index(of:sender){
             deck.select_cards(index:index )
-            update_ui()
+            chooseButton(at: sender)
+            updateViewFromModel()
             
             var deck_score = deck.game_score?.rawValue ?? 0
             score += deck_score
@@ -134,29 +125,44 @@ class ViewController: UIViewController {
     
     func deal_3_more_cards_on_ui(){
         deck.deal_more_3_cards()
-        update_ui()
-        show_n_cards()
+        updateViewFromModel()
         deal_3_more_cards = true
     }
 
-    func update_ui(){
-        for index in deck.playing_cards.indices{
-            var card = deck.playing_cards[index]
-            if card.isSelected {
-                if card.isMakeSet {
-                    buttonsArr[index].alpha = 0
-                }else{
-                    buttonsArr[index].layer.borderWidth = 3
-                    buttonsArr[index].layer.borderColor = UIColor.purple.cgColor
-                }
-                
-            }else{
-                buttonsArr[index].isHidden = false
-                buttonsArr[index].layer.borderWidth = 0
-                buttonsArr[index].layer.borderColor = UIColor.clear.cgColor
+    func chooseButton(at card: UIButton){
+        
+        if selectedButton.count < 2{
+            if selectedButton.contains(card) {
+                card.layer.borderColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+                card.layer.borderWidth = 3.0
+                selectedButton.remove(at: selectedButton.index(of: card)!)
+                return
             }
+            selectedButton += [card]
+            card.layer.borderColor = #colorLiteral(red: 0.8078431487, green: 0.02745098062, blue: 0.3333333433, alpha: 1)
+            card.layer.borderWidth = 3.0
+        }else{
+            selectedButton += [card]
+            card.layer.borderColor = #colorLiteral(red: 0.8078431487, green: 0.02745098062, blue: 0.3333333433, alpha: 1)
+            card.layer.borderWidth = 3.0
+            
+            buttonsArr.forEach() { $0.layer.borderColor = #colorLiteral(red: 0.9999960065, green: 1, blue: 1, alpha: 0) }
+            selectedButton.removeAll()
+            updateScore()
         }
-     
     }
+      
+    private func updateScore() {
+        
+        score_lbl.text = "Score is : \(deck.game_score?.rawValue )"
+    }
+    
 }
 
+struct ModelToViewDataSource {
+    
+    static let shapes: [SetCard.Shape: String] = [.circle: "●", .triangle: "▲", .square: "■"]
+    static var colors: [SetCard.Color: UIColor] = [.red: #colorLiteral(red: 1, green: 0.1491314173, blue: 0, alpha: 1), .blue: #colorLiteral(red: 0.2196078449, green: 0.007843137719, blue: 0.8549019694, alpha: 1), .green: #colorLiteral(red: 0, green: 0.9768045545, blue: 0, alpha: 1)]
+    static var alpha: [SetCard.Shading: CGFloat] = [.filled: 1.0, .outline: 0.40, .striped: 0.15]
+    static var strokeWidth: [SetCard.Shading: CGFloat] = [.filled: -5, .outline: 5, .striped: -5]
+}
