@@ -17,6 +17,7 @@ struct SetCardDeck {
     }
     var game_score : Score?
     var hintCard = [Int]()
+    
     private(set) var cards =  [SetCard]()
     private(set) var playing_cards =  [SetCard]()
     private(set) var number_of_playing_card_on_deck = 24
@@ -53,13 +54,7 @@ struct SetCardDeck {
             }
         }
     }
-    
-    mutating func new_game(){
-        if cards.count >= 12{
-            playing_cards = []
-            get_n_cards(number: first_playing_card_on_deck)
-        }
-    }
+ 
     mutating func select_cards(index:Int){
         
         if selecting_cards.count < 2{ // select 2
@@ -77,15 +72,7 @@ struct SetCardDeck {
         }
         
     }
-    
-    /**
-     For example, these three cards form a set:
 
-     One red striped diamond
-     Two red solid diamonds
-     Three red open diamonds
-     */
-    
     mutating func check_matching_set(){
 
         if is_matched_set_x(on: selecting_cards){
